@@ -32,6 +32,7 @@ import matplotlib.pyplot as plt
 from ideal_denoiser import ideal_denoiser
 from utils.noise_utils import add_gaussian_noise
 from utils.image_utils import load_cifar10_subset, normalize_for_display
+from utils.visualization import create_comparison_figure
 
 
 def process_images_at_sigma(
@@ -78,58 +79,6 @@ def process_images_at_sigma(
         )
     
     return noisy_batch, ideal_denoised_batch
-
-
-def create_comparison_figure(
-    noisy_grid_img: torch.Tensor,
-    ideal_grid_img: torch.Tensor,
-    sigma_values: list,
-    save_path: str,
-    num_sigmas: int
-):
-    """
-    Create combined figure with noisy and denoised images.
-    
-    Parameters:
-    -----------
-    noisy_grid_img : torch.Tensor
-        Grid of noisy images
-    ideal_grid_img : torch.Tensor
-        Grid of ideal denoised images
-    sigma_values : list
-        List of sigma values used
-    save_path : str
-        Path to save the figure
-    num_sigmas : int
-        Number of sigma values (for column labels)
-    """
-    # Convert tensors to numpy for matplotlib
-    noisy_np = noisy_grid_img.permute(1, 2, 0).cpu().numpy()
-    ideal_np = ideal_grid_img.permute(1, 2, 0).cpu().numpy()
-    
-    # Create figure
-    fig, axes = plt.subplots(2, 1, figsize=(num_sigmas * 2, 4))
-    
-    # Plot noisy images
-    axes[0].imshow(noisy_np)
-    axes[0].set_title('Noisy Images', fontsize=14, fontweight='bold')
-    axes[0].axis('off')
-    
-    # Plot ideal denoised images
-    axes[1].imshow(ideal_np)
-    axes[1].set_title('Ideal Denoiser Results', fontsize=14, fontweight='bold')
-    axes[1].axis('off')
-    
-    # Add sigma labels at the top
-    for i, sigma in enumerate(sigma_values):
-        x_pos = (i + 0.5) / num_sigmas
-        fig.text(x_pos, 0.98, f'σ={sigma}', ha='center', va='top', fontsize=10)
-    
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    plt.savefig(save_path, dpi=150, bbox_inches='tight')
-    plt.close()
-    
-    print(f"✓ Saved comparison figure: {save_path}")
 
 
 def generate_denoiser_comparison(
