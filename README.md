@@ -11,27 +11,26 @@ This repository provides a clean implementation of the **Ideal Denoiser** (Equat
 
 ## 📖 Overview
 
-The ideal denoiser is the **theoretical optimal denoiser** that computes the exact expected value of clean images given noisy observations. This repository provides:
+The **ideal denoiser** represents the theoretical optimal solution to the image denoising problem under additive Gaussian noise. It computes the exact **posterior mean** \(\mathbb{E}[x' \mid x]\), where \(x'\) is the clean image and \(x\) is the noisy observation. This closed-form solution, given as Equation 57 in the EDM paper, serves as an upper bound for evaluating practical denoising algorithms.
 
-1. **Clean Implementation**: Direct implementation of Equation 57 from the EDM paper
-2. **Numerical Stability**: Uses log-sum-exp trick for stable computation
-3. **Visualization Tools**: Generate comparison figures across different noise levels
-4. **Mathematical Background**: Comprehensive documentation of the theory
+### Key Contributions
 
-### Ideal Denoiser Formula
+This repository provides:
 
-The ideal denoiser computes:
+1. **Theoretical Foundation**: Implementation of the closed-form optimal denoiser from first principles
+2. **Numerical Methods**: Stable computation using log-sum-exp techniques for extreme noise levels
+3. **Empirical Analysis**: Visualization tools for comparing denoising performance across noise levels
+4. **Mathematical Documentation**: Rigorous derivations connecting Bayesian inference, score matching, and denoising
 
-```
-D(x; σ) = Σᵢ [xᵢ · exp(-||x - xᵢ||² / (2σ²))] / Σᵢ [exp(-||x - xᵢ||² / (2σ²))]
-```
+### Equation 57: The Closed-Form Solution
 
-where:
-- `x`: noisy observation
-- `σ`: noise level (standard deviation)
-- `xᵢ`: training images from the reference distribution
+Given a dataset \(\{x_1, \ldots, x_N\}\) representing the empirical data distribution, the ideal denoiser is expressed as:
 
-This is a **weighted average** of all training images, where weights are proportional to the likelihood of each training image generating the observed noisy image under Gaussian noise.
+$$
+D(x; \sigma) = \frac{\sum_{i=1}^{N} x_i \cdot \exp\left(-\frac{\|x - x_i\|^2}{2\sigma^2}\right)}{\sum_{i=1}^{N} \exp\left(-\frac{\|x - x_i\|^2}{2\sigma^2}\right)}
+$$
+
+This formula computes a **weighted kernel average** over the training distribution, where each weight \(w_i \propto \mathcal{N}(x; x_i, \sigma^2 I)\) represents the likelihood that training image \(x_i\) generated the noisy observation \(x\) under Gaussian noise model \(\mathcal{N}(0, \sigma^2 I)\).
 
 
 ## 📁 Project Structure
@@ -69,200 +68,243 @@ cd ideal-denoising
 pip install -r requirements.txt
 ```
 
-### Generate EDM Figure 1
+### Reproduce EDM Paper Visualization
 
-Reproduce the ideal denoiser visualization from the EDM paper:
+Generate empirical demonstrations of the ideal denoiser across the noise spectrum:
 
 ```bash
 python generate_edm_figure1.py
 ```
 
-This will:
-1. Download CIFAR-10 dataset (if needed)
-2. Generate noisy images with σ = [0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50]
-3. Denoise using the ideal denoiser
-4. Save results to `./results/edm_figure1/` directory
+This experiment:
+1. Loads CIFAR-10 as the empirical approximation of \(p_{\text{data}}\)
+2. Synthesizes noisy observations at noise levels \(\sigma \in [0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50]\)
+3. Applies Equation 57 to compute optimal posterior means
+4. Generates comparative visualizations
 
-**Output:**
-- `figure1_combined_train.png`: Combined visualization for training images
-- `figure1_combined_test.png`: Combined visualization for test images
+**Output Files:**
+- `figure1_combined_train.png`: In-distribution denoising results
+- `figure1_combined_test.png`: Out-of-sample denoising results
 
-Each figure shows:
-- **Top row:** Noisy images with different σ values
-- **Bottom row:** Ideal denoiser results
-- **Columns:** Different noise levels
+**Visualization Structure:**
+- **Top row:** Noisy observations \(x = x' + n\) at various \(\sigma\)
+- **Bottom row:** Posterior means \(D(x; \sigma) = \mathbb{E}[x' \mid x]\)
+- **Columns:** Progression from low to high noise regimes
+
+This demonstrates the denoiser's behavior across different signal-to-noise ratios.
 
 **Expected runtime:** ~5-10 minutes on CPU, ~2-3 minutes on GPU
 
-### Compare Across Noise Levels
+### Comparative Analysis Across Noise Regimes
 
-Compare ideal denoiser performance across multiple noise levels with different delta computation methods:
+Empirically evaluate denoiser performance across the noise spectrum with variants of the log-sum-exp stabilization:
 
 ```bash
 python compare_denoisers.py
 ```
 
-This will:
-1. Load selected images from CIFAR-10
-2. Add noise at various sigma levels
-3. Apply multiple denoiser variants (Max, Median, Percentile-95, Adaptive)
-4. Create comparison visualizations for each method
-5. Save results to `./results/denoiser_comparison/` directory
+This experiment:
+1. Samples test images from CIFAR-10 distribution
+2. Applies Gaussian noise across logarithmically-spaced \(\sigma\) values
+3. Evaluates multiple numerical stabilization variants
+4. Generates comparative visualizations for qualitative assessment
 
-**Output:**
-- `comparison_train_{method}.png`: Training images with each method
-- `comparison_test_{method}.png`: Test images with each method
+**Output Files:**
+- `comparison_train_{method}.png`: In-distribution (training) performance
+- `comparison_test_{method}.png`: Generalization (test) performance
 
-**Available Methods:**
-- **Max (Original)**: Uses maximum value for delta (most stable, default)
-- **Median**: Uses median-based blending for smoother weighting
-- **Percentile-95**: Uses 95th percentile blending
-- **Adaptive**: Adaptive interpolation between max and high percentile
-- **Mean+Std**: Uses mean + alpha * std approach with adaptive blending
+**Stabilization Variants:**
+- **Max**: Standard log-sum-exp with \(\delta = \max_i \ell_i\) (numerically optimal)
+- **Median**: \(\sigma\)-adaptive blending between max and median log-probabilities
+- **Percentile-95**: High percentile-based \(\delta\) with adaptive blending
+- **Adaptive**: Interpolated \(\delta\) between max and 95th percentile
+- **Mean+Std**: Statistical moment-based \(\delta = \mu + \alpha\sigma_{\ell}\)
 
-Each figure shows:
-- **Row 1:** Noisy images at different noise levels
-- **Row 2:** Denoised results using the specific method
+These variants explore the trade-off between numerical stability and approximation fidelity.
 
 **Expected runtime:** ~15-20 minutes on CPU, ~5-7 minutes on GPU
 
 
-## 💻 API Usage
+## 📐 Mathematical Foundation
 
-### Basic Usage
+### Problem Formulation
 
-```python
-import torch
-from ideal_denoiser import ideal_denoiser
-from utils import add_gaussian_noise, load_cifar10_subset
+Given a clean image \(x' \sim p_{\text{data}}\), we observe a noisy version:
 
-# Load data
-train_images = load_cifar10_subset(root="./data", train=True, max_samples=1000)
-test_image = load_cifar10_subset(root="./data", train=False, max_samples=1)[0:1]
+$$
+x = x' + n, \quad n \sim \mathcal{N}(0, \sigma^2 I)
+$$
 
-# Add noise
-sigma = 2.0
-noisy_image = add_gaussian_noise(test_image, sigma)
+where:
+- \(x'\): clean image from the data distribution
+- \(x\): noisy observation  
+- \(n\): Gaussian noise with standard deviation \(\sigma\)
 
-# Denoise
-denoised_image = ideal_denoiser(noisy_image, sigma, train_images)
-```
+### The Ideal Denoiser
 
-### Enhanced Denoiser with Multiple Delta Methods
+The ideal denoiser computes the **posterior mean** - the expected value of the clean image given the noisy observation:
 
-```python
-from ideal_denoiser import ideal_denoiser_enhanced, get_available_denoiser_methods
+$$
+D(x; \sigma) = \mathbb{E}[x' \mid x] = \int x' \cdot p(x' \mid x) \, dx'
+$$
 
-# Get available methods
-methods = get_available_denoiser_methods()
-for name, config in methods.items():
-    print(f"{name}: {config['display_name']}")
+This represents the **theoretical optimal denoiser** under the \(L^2\) loss, providing an upper bound on denoising performance.
 
-# Use specific method
-denoised_max = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
-                                        delta_method='max')
-denoised_median = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
-                                           delta_method='mean')
-denoised_percentile = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
-                                                delta_method='percentile', delta_param=95)
-denoised_adaptive = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
-                                             delta_method='adaptive', delta_param=0.5)
-denoised_std = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
-                                        delta_method='mean_std', delta_param=1.0)
-```
+### Closed-Form Solution (Equation 57)
 
-**Delta Methods Explained:**
-- **max**: Most numerically stable, uses maximum log-probability
-- **mean**: Blends max with median (sigma-adaptive ratio for stability at low sigma)
-- **percentile**: Blends max with high percentile (sigma-adaptive blending)
-- **adaptive**: Interpolates between max and blended high-percentile based on coefficient
-- **mean_std**: Uses mean + alpha * std with sigma-adaptive blending for stability
+For a finite dataset \(\{x_1, x_2, \ldots, x_N\}\) with empirical distribution \(p_{\text{data}}(x') = \frac{1}{N} \sum_{i=1}^{N} \delta(x' - x_i)\), the ideal denoiser has the closed-form solution:
 
-All methods except 'max' use sigma-adaptive blending to ensure numerical stability at low sigma values (0.2, 0.5, 1.0).
+$$
+D(x; \sigma) = \frac{\sum_{i=1}^{N} x_i \cdot \exp\left(-\frac{\|x - x_i\|^2}{2\sigma^2}\right)}{\sum_{i=1}^{N} \exp\left(-\frac{\|x - x_i\|^2}{2\sigma^2}\right)}
+$$
 
+This is a **weighted average** of all training images, where the weights are:
 
-## 📝 Implementation Details
+$$
+w_i = \frac{\exp\left(-\frac{\|x - x_i\|^2}{2\sigma^2}\right)}{\sum_{j=1}^{N} \exp\left(-\frac{\|x - x_j\|^2}{2\sigma^2}\right)}
+$$
 
-### Mathematical Formula
+### Interpretation
 
-The ideal denoiser implements Equation 57 from the EDM paper:
+The formula can be understood as a **kernel density estimator** where:
+- **Similar images receive higher weights**: If \(x_i\) is close to the noisy input \(x\), then \(\|x - x_i\|^2\) is small and \(w_i\) is large
+- **Dissimilar images receive lower weights**: If \(x_i\) is far from \(x\), then \(w_i\) approaches zero
+- **Noise level controls smoothness**: Larger \(\sigma\) produces more uniform weights (smoother averaging); smaller \(\sigma\) produces peaked weights (nearest neighbor-like behavior)
 
-```
-D(x; σ) = E[x' | x]  where  x = x' + n,  n ~ N(0, σ²I)
-```
+### Numerical Stability: Log-Sum-Exp Trick
 
-This computes the **posterior mean** - the expected value of the clean image given the noisy observation.
+Direct computation can cause numerical overflow/underflow when \(\sigma\) is small. We employ the **log-sum-exp trick** for stability:
 
-### Numerical Stability
+Define the log-probabilities:
+$$
+\ell_i = -\frac{\|x - x_i\|^2}{2\sigma^2}
+$$
 
-The implementation uses the **log-sum-exp trick** to prevent numerical overflow:
+Compute the maximum:
+$$
+\delta = \max_{j=1,\ldots,N} \ell_j
+$$
 
-```python
-# Compute log probabilities
-log_probs = -||x - xᵢ||² / (2σ²)
+Then the numerically stable formula becomes:
+$$
+D(x; \sigma) = \frac{\sum_{i=1}^{N} x_i \cdot \exp(\ell_i - \delta)}{\sum_{i=1}^{N} \exp(\ell_i - \delta)}
+$$
 
-# Subtract max for stability (log-sum-exp trick)
-delta = max(log_probs)
-weights = exp(log_probs - delta)
+By subtracting \(\delta\), all exponentials are bounded in \((0, 1]\), preventing overflow while maintaining mathematical equivalence.
 
-# Weighted average
-D(x; σ) = Σᵢ [weights_i · xᵢ] / Σᵢ [weights_i]
-```
+### Connection to Score Matching
 
-This ensures stable computation even for small sigma values or large distances.
+The ideal denoiser is fundamentally connected to the **score function** of the noisy distribution:
 
+$$
+\nabla_x \log p(x; \sigma) = -\frac{1}{\sigma^2}(x - D(x; \sigma))
+$$
 
-## 🔧 Configuration
+This relationship, known as **Tweedie's formula**, can be rewritten as:
 
-You can customize the comparison by modifying the configuration in the scripts:
+$$
+D(x; \sigma) = x + \sigma^2 \nabla_x \log p(x; \sigma)
+$$
 
-```python
-# In compare_denoisers.py or generate_edm_figure1.py:
-config = {
-    'sigma_values': [0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50],  # Noise levels
-    'ideal_denoiser_subset_size': 1000,  # Number of training images to use
-    'train_selection_indices': [2, 3, 4],  # Which images to visualize
-    'test_selection_indices': [2, 3, 4]
-}
-```
+This connects denoising to score-based generative modeling, where the denoiser directly computes the score-corrected estimate.
 
-## 🎓 Background
+### Computational Complexity
 
-### What is the Ideal Denoiser?
+- **Time Complexity**: \(O(N \times B \times d)\) where \(N\) is the number of training images, \(B\) is batch size, and \(d = C \times H \times W\)
+- **Space Complexity**: \(O(N \times d)\) to store the training set
+- **Practical Limitation**: Scales linearly with dataset size, making it feasible only for small datasets (e.g., CIFAR-10 with \(N = 50,000\))
 
-The ideal denoiser is a **theoretical upper bound** on denoising performance. It assumes:
-
-1. **Full knowledge of data distribution**: Access to entire training set
-2. **Known noise level**: Perfect knowledge of σ
-3. **Exact computation**: Ability to compute exact posterior mean
-
-In practice, neural networks trained as denoisers approximate this ideal denoiser but with:
-- **Constant computation**: O(d) regardless of dataset size
-- **Compact representation**: Store only network weights
-- **Better generalization**: Can denoise images outside training set
-
-### Key Insights
-
-- **Weighted Average**: The ideal denoiser is a weighted average of all training images
-- **Similarity-based**: Similar images get higher weights
-- **Sigma-dependent**: Larger σ makes weights more uniform; smaller σ makes them more peaked
-
-### Special Cases
-
-1. **Zero noise (σ → 0)**: Returns nearest neighbor from training set
-2. **Infinite noise (σ → ∞)**: Returns mean of all training images
-3. **Exact match**: If noisy input matches a training image, returns that image
-
-## 📚 Mathematical Background
-
-For detailed mathematical derivations and theory, see [`MATHEMATICAL_BACKGROUND.md`](MATHEMATICAL_BACKGROUND.md), which includes:
-
-- Two methods to derive Equation 57 (Bayesian and Optimization approaches)
-- Connection to score matching and Tweedie's formula
-- Intuitive understanding of the weighted average
+**For detailed mathematical derivations**, including:
+- Bayesian posterior mean derivation
+- Denoising score matching optimization approach  
 - Special cases and limiting behavior
-- Numerical stability considerations
-- Computational complexity analysis
+- Extensions and variations
+
+Please refer to the comprehensive mathematical documentation:  
+**[MATHEMATICAL_BACKGROUND.md](MATHEMATICAL_BACKGROUND.md)**
+
+
+## 🔧 Experimental Parameters
+
+The experiments can be configured to explore different regimes of the denoising problem. Key parameters include:
+
+- **Noise levels (\(\sigma\))**: Range of standard deviations \([0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50]\)
+  - Low regime: \(\sigma \in [0.2, 1]\) → nearest-neighbor behavior
+  - Intermediate: \(\sigma \in [2, 10]\) → kernel averaging
+  - High regime: \(\sigma \geq 20\) → approaches dataset mean
+
+- **Dataset size (\(N\))**: Number of training samples for empirical distribution
+  - Affects approximation quality of \(p_{\text{data}}\)
+  - Computational complexity scales linearly with \(N\)
+
+- **Delta computation methods**: Variants of the log-sum-exp stabilization
+  - Investigate numerical stability vs. approximation quality trade-offs
+
+## 🎓 Theoretical Background
+
+### The Ideal Denoiser as an Optimal Estimator
+
+The ideal denoiser represents the **Bayes-optimal estimator** under the \(L^2\) loss for the image denoising problem. It provides a **theoretical performance upper bound** against which practical denoising algorithms can be evaluated. The optimality is derived from two equivalent perspectives:
+
+1. **Bayesian Inference**: The posterior mean \(\mathbb{E}[x' \mid x]\) minimizes the expected squared error
+2. **Denoising Score Matching**: The solution that minimizes \(\mathbb{E}_{x' \sim p_{\text{data}}} \mathbb{E}_{n \sim \mathcal{N}(0,\sigma^2)} \|D(x'+n) - x'\|^2\)
+
+### Assumptions and Limitations
+
+The ideal denoiser requires:
+- **Complete knowledge of \(p_{\text{data}}\)**: Access to the entire training distribution (empirically: all training samples)
+- **Known noise model**: Precise knowledge of noise level \(\sigma\)
+- **Computational resources**: \(O(N \times d)\) complexity per query, where \(N\) is dataset size
+
+### Neural Denoisers as Function Approximators
+
+Practical neural network-based denoisers **approximate** the ideal denoiser with critical advantages:
+- **Constant complexity**: \(O(d)\) inference time, independent of \(N\)
+- **Compact parametrization**: Store only network weights \(\theta\), not entire dataset
+- **Generalization capability**: Learned denoisers can handle out-of-distribution images
+
+The ideal denoiser thus serves as a theoretical benchmark, while neural networks provide scalable approximations.
+
+### Asymptotic Behavior
+
+The denoiser exhibits well-defined limiting behavior:
+
+1. **Low noise regime (\(\sigma \to 0\))**: 
+   $$D(x; \sigma) \to x_{\text{NN}}, \quad \text{where } x_{\text{NN}} = \arg\min_{x_i} \|x - x_i\|$$
+   Reduces to nearest neighbor selection
+
+2. **High noise regime (\(\sigma \to \infty\))**: 
+   $$D(x; \sigma) \to \bar{x} = \frac{1}{N}\sum_{i=1}^{N} x_i$$
+   Converges to the dataset mean (all weights become uniform)
+
+3. **Interpolation regime**: For intermediate \(\sigma\), performs smooth kernel-weighted averaging
+
+## 📚 Mathematical Derivations and Proofs
+
+For comprehensive mathematical derivations, proofs, and theoretical analysis, please refer to:
+
+**[MATHEMATICAL_BACKGROUND.md](MATHEMATICAL_BACKGROUND.md)**
+
+This document provides:
+
+- **Two rigorous derivations of Equation 57**:
+  - Method 1: Bayesian posterior mean approach using Bayes' rule
+  - Method 2: Denoising score matching optimization via convex analysis
+  
+- **Theoretical connections**:
+  - Relationship to score-based generative models
+  - Tweedie's formula and its implications
+  - Connection to Nadaraya-Watson kernel regression
+  
+- **Analytical properties**:
+  - Special cases and asymptotic behavior
+  - Proof of optimality under \(L^2\) loss
+  - Numerical stability analysis (log-sum-exp trick)
+  
+- **Computational considerations**:
+  - Time and space complexity analysis
+  - Comparison with neural network denoisers
+  - Practical implementation guidelines
 
 ## 🤝 Acknowledgments
 
