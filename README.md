@@ -96,7 +96,7 @@ Each figure shows:
 
 ### Compare Across Noise Levels
 
-Compare ideal denoiser performance across multiple noise levels:
+Compare ideal denoiser performance across multiple noise levels with different delta computation methods:
 
 ```bash
 python compare_denoisers.py
@@ -105,19 +105,74 @@ python compare_denoisers.py
 This will:
 1. Load selected images from CIFAR-10
 2. Add noise at various sigma levels
-3. Apply ideal denoiser
-4. Create comparison visualizations
+3. Apply multiple denoiser variants (Max, Median, Percentile-95, Adaptive)
+4. Create comparison visualizations for each method
 5. Save results to `./results/denoiser_comparison/` directory
 
 **Output:**
-- `comparison_train.png`: Comparison for training images
-- `comparison_test.png`: Comparison for test images
+- `comparison_train_{method}.png`: Training images with each method
+- `comparison_test_{method}.png`: Test images with each method
+
+**Available Methods:**
+- **Max (Original)**: Uses maximum value for delta (most stable, default)
+- **Median**: Uses median-based blending for smoother weighting
+- **Percentile-95**: Uses 95th percentile blending
+- **Adaptive**: Adaptive interpolation between max and high percentile
 
 Each figure shows:
 - **Row 1:** Noisy images at different noise levels
-- **Row 2:** Ideal denoiser results
+- **Row 2:** Denoised results using the specific method
 
-**Expected runtime:** ~10-15 minutes on CPU, ~3-5 minutes on GPU
+**Expected runtime:** ~15-20 minutes on CPU, ~5-7 minutes on GPU
+
+
+## 💻 API Usage
+
+### Basic Usage
+
+```python
+import torch
+from ideal_denoiser import ideal_denoiser
+from utils import add_gaussian_noise, load_cifar10_subset
+
+# Load data
+train_images = load_cifar10_subset(root="./data", train=True, max_samples=1000)
+test_image = load_cifar10_subset(root="./data", train=False, max_samples=1)[0:1]
+
+# Add noise
+sigma = 2.0
+noisy_image = add_gaussian_noise(test_image, sigma)
+
+# Denoise
+denoised_image = ideal_denoiser(noisy_image, sigma, train_images)
+```
+
+### Enhanced Denoiser with Multiple Delta Methods
+
+```python
+from ideal_denoiser import ideal_denoiser_enhanced, get_available_denoiser_methods
+
+# Get available methods
+methods = get_available_denoiser_methods()
+for name, config in methods.items():
+    print(f"{name}: {config['display_name']}")
+
+# Use specific method
+denoised_max = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
+                                        delta_method='max')
+denoised_median = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
+                                           delta_method='mean')
+denoised_percentile = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
+                                                delta_method='percentile', delta_param=95)
+denoised_adaptive = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
+                                             delta_method='adaptive', delta_param=0.5)
+```
+
+**Delta Methods Explained:**
+- **max**: Most numerically stable, uses maximum log-probability
+- **mean**: Blends max with median for smoother weighting (80% max, 20% median)
+- **percentile**: Blends max with high percentile (70% max, 30% percentile)
+- **adaptive**: Interpolates between max and blended high-percentile based on coefficient
 
 
 ## 📝 Implementation Details
