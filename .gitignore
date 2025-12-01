@@ -26,6 +26,9 @@ results_*/
 *.jpg
 *.jpeg
 
+# Exception: Keep documentation images
+!docs/*.png
+
 # Environment
 venv/
 env/
