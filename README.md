@@ -1,0 +1,246 @@
+# Ideal Denoiser - Implementation of EDM Equation 57
+
+[![Paper](https://img.shields.io/badge/Paper-arXiv-red)](https://arxiv.org/abs/2206.00364)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+This repository provides a clean implementation of the **Ideal Denoiser** (Equation 57) from the paper:
+
+> **Elucidating the Design Space of Diffusion-Based Generative Models**  
+> Tero Karras, Miika Aittala, Timo Aila, Samuli Laine  
+> NeurIPS 2022
+
+## 📖 Overview
+
+The ideal denoiser is the **theoretical optimal denoiser** that computes the exact expected value of clean images given noisy observations. This repository provides:
+
+1. **Clean Implementation**: Direct implementation of Equation 57 from the EDM paper
+2. **Numerical Stability**: Uses log-sum-exp trick for stable computation
+3. **Visualization Tools**: Generate comparison figures across different noise levels
+4. **Mathematical Background**: Comprehensive documentation of the theory
+
+### Ideal Denoiser Formula
+
+The ideal denoiser computes:
+
+```
+D(x; σ) = Σᵢ [xᵢ · exp(-||x - xᵢ||² / (2σ²))] / Σᵢ [exp(-||x - xᵢ||² / (2σ²))]
+```
+
+where:
+- `x`: noisy observation
+- `σ`: noise level (standard deviation)
+- `xᵢ`: training images from the reference distribution
+
+This is a **weighted average** of all training images, where weights are proportional to the likelihood of each training image generating the observed noisy image under Gaussian noise.
+
+
+## 📁 Project Structure
+
+```
+ideal-denoising/
+├── ideal_denoiser.py           # Core implementation (Equation 57)
+├── compare_denoisers.py        # Comparison across noise levels
+├── generate_edm_figure1.py     # Generate EDM Figure 1 visualization
+├── MATHEMATICAL_BACKGROUND.md  # Mathematical theory and derivations
+├── README.md                   # This file
+├── requirements.txt            # Dependencies
+│
+├── utils/                      # Utility modules
+│   ├── __init__.py
+│   ├── noise_utils.py          # Noise generation
+│   ├── image_utils.py          # Data loading and processing
+│   └── visualization.py        # Plotting and visualization
+│
+├── data/                       # Dataset storage (auto-downloaded)
+└── results/                    # Output directory
+    ├── edm_figure1/            # EDM Figure 1 results
+    └── denoiser_comparison/    # Comparison results
+```
+
+## 🚀 Quick Start
+
+### Installation
+
+```bash
+# Navigate to the repository
+cd ideal-denoising
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### Generate EDM Figure 1
+
+Reproduce the ideal denoiser visualization from the EDM paper:
+
+```bash
+python generate_edm_figure1.py
+```
+
+This will:
+1. Download CIFAR-10 dataset (if needed)
+2. Generate noisy images with σ = [0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50]
+3. Denoise using the ideal denoiser
+4. Save results to `./results/edm_figure1/` directory
+
+**Output:**
+- `figure1_combined_train.png`: Combined visualization for training images
+- `figure1_combined_test.png`: Combined visualization for test images
+
+Each figure shows:
+- **Top row:** Noisy images with different σ values
+- **Bottom row:** Ideal denoiser results
+- **Columns:** Different noise levels
+
+**Expected runtime:** ~5-10 minutes on CPU, ~2-3 minutes on GPU
+
+### Compare Across Noise Levels
+
+Compare ideal denoiser performance across multiple noise levels:
+
+```bash
+python compare_denoisers.py
+```
+
+This will:
+1. Load selected images from CIFAR-10
+2. Add noise at various sigma levels
+3. Apply ideal denoiser
+4. Create comparison visualizations
+5. Save results to `./results/denoiser_comparison/` directory
+
+**Output:**
+- `comparison_train.png`: Comparison for training images
+- `comparison_test.png`: Comparison for test images
+
+Each figure shows:
+- **Row 1:** Noisy images at different noise levels
+- **Row 2:** Ideal denoiser results
+
+**Expected runtime:** ~10-15 minutes on CPU, ~3-5 minutes on GPU
+
+
+## 📝 Implementation Details
+
+### Mathematical Formula
+
+The ideal denoiser implements Equation 57 from the EDM paper:
+
+```
+D(x; σ) = E[x' | x]  where  x = x' + n,  n ~ N(0, σ²I)
+```
+
+This computes the **posterior mean** - the expected value of the clean image given the noisy observation.
+
+### Numerical Stability
+
+The implementation uses the **log-sum-exp trick** to prevent numerical overflow:
+
+```python
+# Compute log probabilities
+log_probs = -||x - xᵢ||² / (2σ²)
+
+# Subtract max for stability (log-sum-exp trick)
+delta = max(log_probs)
+weights = exp(log_probs - delta)
+
+# Weighted average
+D(x; σ) = Σᵢ [weights_i · xᵢ] / Σᵢ [weights_i]
+```
+
+This ensures stable computation even for small sigma values or large distances.
+
+
+## 🔧 Configuration
+
+You can customize the comparison by modifying the configuration in the scripts:
+
+```python
+# In compare_denoisers.py or generate_edm_figure1.py:
+config = {
+    'sigma_values': [0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50],  # Noise levels
+    'ideal_denoiser_subset_size': 1000,  # Number of training images to use
+    'train_selection_indices': [2, 3, 4],  # Which images to visualize
+    'test_selection_indices': [2, 3, 4]
+}
+```
+
+## 🎓 Background
+
+### What is the Ideal Denoiser?
+
+The ideal denoiser is a **theoretical upper bound** on denoising performance. It assumes:
+
+1. **Full knowledge of data distribution**: Access to entire training set
+2. **Known noise level**: Perfect knowledge of σ
+3. **Exact computation**: Ability to compute exact posterior mean
+
+In practice, neural networks trained as denoisers approximate this ideal denoiser but with:
+- **Constant computation**: O(d) regardless of dataset size
+- **Compact representation**: Store only network weights
+- **Better generalization**: Can denoise images outside training set
+
+### Key Insights
+
+- **Weighted Average**: The ideal denoiser is a weighted average of all training images
+- **Similarity-based**: Similar images get higher weights
+- **Sigma-dependent**: Larger σ makes weights more uniform; smaller σ makes them more peaked
+
+### Special Cases
+
+1. **Zero noise (σ → 0)**: Returns nearest neighbor from training set
+2. **Infinite noise (σ → ∞)**: Returns mean of all training images
+3. **Exact match**: If noisy input matches a training image, returns that image
+
+## 📚 Mathematical Background
+
+For detailed mathematical derivations and theory, see [`MATHEMATICAL_BACKGROUND.md`](MATHEMATICAL_BACKGROUND.md), which includes:
+
+- Two methods to derive Equation 57 (Bayesian and Optimization approaches)
+- Connection to score matching and Tweedie's formula
+- Intuitive understanding of the weighted average
+- Special cases and limiting behavior
+- Numerical stability considerations
+- Computational complexity analysis
+
+## 🤝 Acknowledgments
+
+### Concept and Formula
+
+The ideal denoiser concept and formula (Equation 57) are from:
+- **EDM Paper**: Karras et al., "Elucidating the Design Space of Diffusion-Based Generative Models", NeurIPS 2022
+- **Paper**: https://arxiv.org/abs/2206.00364
+- **Equation 57**: Appendix B.3 of the paper
+
+### Implementation
+
+This implementation is our own work. **The original EDM repository does not include code for the ideal denoiser (Equation 57)**. This repository fills that gap by providing a clean, well-documented implementation.
+
+## 📖 Citation
+
+If you use this code, please cite the original EDM paper:
+
+```bibtex
+@inproceedings{Karras2022edm,
+  author    = {Tero Karras and Miika Aittala and Timo Aila and Samuli Laine},
+  title     = {Elucidating the Design Space of Diffusion-Based Generative Models},
+  booktitle = {Proc. NeurIPS},
+  year      = {2022}
+}
+```
+
+## 📄 License
+
+This project is provided freely for educational and research purposes.
+
+**Attribution:**
+- The ideal denoiser concept and formula (Equation 57) are from the EDM paper by Karras et al. (NeurIPS 2022)
+- This implementation is our own work and is provided without license restrictions
+
+## 🐛 Issues & Contributions
+
+If you find any issues or have suggestions for improvements, please feel free to open an issue or submit a pull request.
+
+---
+
+**Note:** This repository focuses exclusively on the ideal denoiser (Equation 57). For the full EDM implementation including neural network-based denoisers, please refer to the [official EDM repository](https://github.com/NVlabs/edm).
