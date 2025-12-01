@@ -30,8 +30,7 @@ import matplotlib.pyplot as plt
 
 # Import ideal denoiser
 from ideal_denoiser import ideal_denoiser
-from utils.noise_utils import add_gaussian_noise
-from utils.image_utils import load_cifar10_subset, normalize_for_display
+from utils import add_gaussian_noise, load_cifar10_subset, normalize_for_display
 from utils.visualization import create_comparison_figure
 
 
