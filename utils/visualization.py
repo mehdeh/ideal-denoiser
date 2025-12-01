@@ -88,8 +88,9 @@ def create_comparison_figure(
     """
     Create a simple comparison figure with noisy and denoised image grids.
 
-    This function is a lightweight utility that mirrors the behavior used in
-    ``compare_denoisers.py`` so it can be imported from ``utils.visualization``.
+    This function is a wrapper around create_labeled_figure for backwards
+    compatibility. It creates a comparison figure with properly aligned sigma
+    labels using the same implementation as create_labeled_figure.
 
     Parameters
     ----------
@@ -103,31 +104,17 @@ def create_comparison_figure(
         Full path where the figure will be saved.
     num_sigmas : int
         Number of sigma values (used for column labels).
+        
+    Notes
+    -----
+    This function now directly calls create_labeled_figure to avoid code
+    duplication and ensure consistent visualization across all scripts.
     """
-    # Convert tensors to numpy for matplotlib
-    noisy_np = noisy_grid_img.permute(1, 2, 0).cpu().numpy()
-    ideal_np = ideal_grid_img.permute(1, 2, 0).cpu().numpy()
-
-    # Create figure
-    fig, axes = plt.subplots(2, 1, figsize=(num_sigmas * 2, 4))
-
-    # Plot noisy images
-    axes[0].imshow(noisy_np)
-    axes[0].set_title("Noisy Images", fontsize=14, fontweight="bold")
-    axes[0].axis("off")
-
-    # Plot ideal denoised images
-    axes[1].imshow(ideal_np)
-    axes[1].set_title("Ideal Denoiser Results", fontsize=14, fontweight="bold")
-    axes[1].axis("off")
-
-    # Add sigma labels at the top
-    for i, sigma in enumerate(sigma_values):
-        x_pos = (i + 0.5) / num_sigmas
-        fig.text(x_pos, 0.98, f"σ={sigma}", ha="center", va="top", fontsize=10)
-
-    plt.tight_layout(rect=[0, 0, 1, 0.96])
-    plt.savefig(save_path, dpi=150, bbox_inches="tight")
-    plt.close()
-
-    print(f"Saved comparison figure to: {save_path}")
+    # Simply delegate to create_labeled_figure with appropriate parameter names
+    create_labeled_figure(
+        noisy_grid=noisy_grid_img,
+        denoised_grid=ideal_grid_img,
+        sigma_values=sigma_values,
+        save_path=save_path,
+        num_sigmas=num_sigmas
+    )
