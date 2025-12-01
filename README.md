@@ -118,6 +118,7 @@ This will:
 - **Median**: Uses median-based blending for smoother weighting
 - **Percentile-95**: Uses 95th percentile blending
 - **Adaptive**: Adaptive interpolation between max and high percentile
+- **Mean+Std**: Uses mean + alpha * std approach with adaptive blending
 
 Each figure shows:
 - **Row 1:** Noisy images at different noise levels
@@ -166,13 +167,18 @@ denoised_percentile = ideal_denoiser_enhanced(noisy_image, sigma, train_images,
                                                 delta_method='percentile', delta_param=95)
 denoised_adaptive = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
                                              delta_method='adaptive', delta_param=0.5)
+denoised_std = ideal_denoiser_enhanced(noisy_image, sigma, train_images, 
+                                        delta_method='mean_std', delta_param=1.0)
 ```
 
 **Delta Methods Explained:**
 - **max**: Most numerically stable, uses maximum log-probability
-- **mean**: Blends max with median for smoother weighting (80% max, 20% median)
-- **percentile**: Blends max with high percentile (70% max, 30% percentile)
+- **mean**: Blends max with median (sigma-adaptive ratio for stability at low sigma)
+- **percentile**: Blends max with high percentile (sigma-adaptive blending)
 - **adaptive**: Interpolates between max and blended high-percentile based on coefficient
+- **mean_std**: Uses mean + alpha * std with sigma-adaptive blending for stability
+
+All methods except 'max' use sigma-adaptive blending to ensure numerical stability at low sigma values (0.2, 0.5, 1.0).
 
 
 ## 📝 Implementation Details

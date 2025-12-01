@@ -324,7 +324,7 @@ def main():
         'train_selection_indices': [2, 3, 4],
         'test_selection_indices': [2, 3, 4],
         'ideal_denoiser_subset_size': 1000,
-        'methods_to_compare': ['max', 'mean', 'percentile_95', 'adaptive']
+        'methods_to_compare': ['max', 'mean', 'percentile_95', 'adaptive', 'mean_std']
     }
     
     # Device selection
