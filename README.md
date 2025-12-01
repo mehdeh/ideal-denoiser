@@ -104,11 +104,11 @@ This demonstrates the denoiser's behavior across different signal-to-noise ratio
 
 **Training Set (In-distribution denoising):**
 
-<img src="docs/figure1_combined_train.png" width="30%">
+<img src="docs/figure1_combined_train.png" width="50%">
 
 **Test Set (Out-of-sample denoising):**
 
-<img src="docs/figure1_combined_test.png" width="30%">
+<img src="docs/figure1_combined_test.png" width="50%">
 
 </div>
 
