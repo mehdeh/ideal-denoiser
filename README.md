@@ -126,9 +126,6 @@ python run_ideal_denoiser.py --num-images 5 --sigma-list 0 1 2 5 10
 
 # Use GPU and larger training set
 python run_ideal_denoiser.py --device cuda --train-size 5000
-
-# Custom start index and specific sigma range
-python run_ideal_denoiser.py --start-index 10 --num-images 3 --sigma-list 0.5 1 2 3
 ```
 
 **CLI Parameters:**
@@ -138,11 +135,10 @@ python run_ideal_denoiser.py --start-index 10 --num-images 3 --sigma-list 0.5 1 
 | `--data-root` | `./data` | Root directory for CIFAR-10 data |
 | `--save-dir` | `./results/denoiser_runs` | Directory to save output images |
 | `--num-images` | `3` | Number of images to denoise from each dataset |
-| `--start-index` | `2` | Starting index for image selection |
 | `--train-size` | `1000` | Number of training images for denoiser reference |
 | `--sigma-list` | `0 0.2 0.5 1 2 3 5 7 10 20 50` | List of noise levels to test |
 | `--device` | auto-detect | Device to use (`cpu` or `cuda`) |
-| `--seed` | `42` | Random seed for reproducibility |
+| `--seed` | `None` | Random seed for reproducibility (if not set, selection is non-deterministic) |
 
 **Output Files:**
 

@@ -1,7 +1,7 @@
 """
 Run Ideal Denoiser with CLI Arguments
 
-This script demonstrates the ideal denoiser (Equation 57 from EDM paper) 
+This script demonstrates the ideal denoiser (Equation 57 from EDM paper)
 on CIFAR-10 images at various noise levels with configurable parameters via CLI.
 
 For selected train and test images with various noise levels, it generates visualizations
@@ -14,16 +14,15 @@ This allows visual assessment of the theoretical optimal denoising performance.
 Reference:
     Karras et al., "Elucidating the Design Space of Diffusion-Based Generative Models", NeurIPS 2022
     Paper: https://arxiv.org/abs/2206.00364
-    
+
 Note:
     While the ideal denoiser concept and formula (Equation 57) are from the EDM paper,
     this implementation is our own work. The original EDM repository does not include
     code for the ideal denoiser.
-    
+
 Usage:
     python run_ideal_denoiser.py --num-images 3 --train-size 1000
     python run_ideal_denoiser.py --sigma-list 0 0.5 1 2 5 10 --device cuda
-    python run_ideal_denoiser.py --start-index 5 --num-images 5 --train-size 5000
 """
 
 import torch
@@ -212,12 +211,6 @@ def parse_arguments():
         default=3,
         help='Number of images to denoise from each dataset (train/test)'
     )
-    parser.add_argument(
-        '--start-index',
-        type=int,
-        default=2,
-        help='Starting index for image selection'
-    )
     
     # Denoiser parameters
     parser.add_argument(
@@ -246,8 +239,8 @@ def parse_arguments():
     parser.add_argument(
         '--seed',
         type=int,
-        default=42,
-        help='Random seed for reproducibility'
+        default=None,
+        help='Random seed for reproducibility (if not set, selection is non-deterministic)'
     )
     
     return parser.parse_args()
@@ -278,46 +271,46 @@ def main():
     print(f"  Data root: {args.data_root}")
     print(f"  Save directory: {args.save_dir}")
     print(f"  Number of images: {args.num_images}")
-    print(f"  Start index: {args.start_index}")
     print(f"  Training images for denoiser: {args.train_size}")
     print(f"  Sigma values: {args.sigma_list}")
     print(f"  Random seed: {args.seed}")
     
-    # Set random seed for reproducibility
-    torch.manual_seed(args.seed)
-    np.random.seed(args.seed)
-    
-    # Calculate end index
-    end_index = args.start_index + args.num_images
-    selection_indices = list(range(args.start_index, end_index))
-    
-    print(f"\n  Selection indices: {selection_indices}")
+    # Set random seed for reproducibility (only if provided)
+    if args.seed is not None:
+        torch.manual_seed(args.seed)
+        np.random.seed(args.seed)
     
     # Load data subsets
     print("\n" + "="*80)
     print("Loading Data Subsets")
     print("="*80)
     
-    # We need to load enough samples to cover the selection indices
-    max_samples_needed = max(selection_indices) + 1
-    
-    print(f"\nLoading {max_samples_needed} samples for selection...")
+    print(f"\nLoading {args.num_images} samples for selection...")
     train_subset = load_cifar10_subset(
         root=args.data_root,
         normalize=True,
         train=True,
-        max_samples=max_samples_needed
+        max_samples=args.num_images
     )
     test_subset = load_cifar10_subset(
         root=args.data_root,
         normalize=True,
         train=False,
-        max_samples=max_samples_needed
+        max_samples=args.num_images
     )
     
-    # Select specific images
-    train_selected = train_subset[selection_indices]
-    test_selected = test_subset[selection_indices]
+    num_available = len(train_subset)
+    if args.num_images > num_available:
+        raise ValueError(
+            f"Requested num-images={args.num_images} but only {num_available} samples are available."
+        )
+    
+    indices = np.random.choice(num_available, size=args.num_images, replace=False)
+    
+    print(f"\n  Randomly selected indices: {indices.tolist()}")
+    
+    train_selected = train_subset[indices]
+    test_selected = test_subset[indices]
     
     print(f"Selected {len(train_selected)} training images")
     print(f"Selected {len(test_selected)} test images")

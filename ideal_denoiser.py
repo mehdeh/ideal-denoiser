@@ -105,29 +105,5 @@ def ideal_denoiser(x_noisy, sigma, x_all):
     return denoised
 
 
-def get_available_denoiser_methods():
-    """
-    Get a dictionary of available denoiser methods with their configurations.
-    
-    Currently only the numerically stable max-based method is exposed, which
-    corresponds to the standard log-sum-exp stabilization.
-    
-    Returns:
-    --------
-    dict : Dictionary mapping method names to their configuration
-        Each configuration contains:
-        - 'function': The denoiser function to use
-        - 'params': Dictionary of parameters for the function
-        - 'display_name': Human-readable name for visualization
-    """
-    return {
-        'max': {
-            'function': ideal_denoiser,
-            'params': {},
-            'display_name': 'Max (Log-Sum-Exp)'
-        }
-    }
-
-
-__all__ = ['ideal_denoiser', 'get_available_denoiser_methods']
+__all__ = ['ideal_denoiser']
 
