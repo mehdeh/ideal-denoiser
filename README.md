@@ -19,9 +19,8 @@ This repository provides:
 
 1. **Theoretical Foundation**: Implementation of Equation 57 (closed-form optimal denoiser) from the EDM paper
 2. **Numerical Methods**: Our own implementation of stable computation using log-sum-exp techniques for extreme noise levels
-3. **Enhanced Variants**: Our proposed improvements with multiple delta computation strategies
-4. **Empirical Analysis**: Visualization tools for comparing denoising performance across noise levels
-5. **Mathematical Documentation**: Rigorous derivations connecting Bayesian inference, score matching, and denoising
+3. **Empirical Analysis**: Visualization tools for comparing denoising performance across noise levels
+4. **Mathematical Documentation**: Rigorous derivations connecting Bayesian inference, score matching, and denoising
 
 ### Equation 57: The Closed-Form Solution
 
@@ -116,7 +115,7 @@ This demonstrates the denoiser's behavior across different signal-to-noise ratio
 
 ### Comparative Analysis Across Noise Regimes
 
-Empirically evaluate denoiser performance across the noise spectrum with variants of the log-sum-exp stabilization:
+Empirically evaluate denoiser performance across the noise spectrum using the ideal denoiser with log-sum-exp stabilization:
 
 ```bash
 python compare_denoisers.py
@@ -125,24 +124,12 @@ python compare_denoisers.py
 This experiment:
 1. Samples test images from CIFAR-10 distribution
 2. Applies Gaussian noise across logarithmically-spaced $\sigma$ values
-3. Evaluates multiple numerical stabilization variants
+3. Applies the ideal denoiser with log-sum-exp stabilization
 4. Generates comparative visualizations for qualitative assessment
 
 **Output Files:**
-- `comparison_train_{method}.png`: In-distribution (training) performance
-- `comparison_test_{method}.png`: Generalization (test) performance
-
-**Stabilization Variants:**
-
-**Note**: *These enhanced variants are our own contributions and are not part of the original EDM paper.*
-
-- **Max**: Standard log-sum-exp with $\delta = \max_i \ell_i$ (numerically optimal)
-- **Median**: $\sigma$-adaptive blending between max and median log-probabilities
-- **Percentile-95**: High percentile-based $\delta$ with adaptive blending
-- **Adaptive**: Interpolated $\delta$ between max and 95th percentile
-- **Mean+Std**: Statistical moment-based $\delta = \mu + \alpha\sigma_{\ell}$
-
-These variants explore the trade-off between numerical stability and approximation fidelity.
+- `comparison_train_max.png`: In-distribution (training) performance
+- `comparison_test_max.png`: Generalization (test) performance
 
 **Expected runtime:** ~15-20 minutes on CPU, ~5-7 minutes on GPU
 
@@ -255,7 +242,7 @@ The experiments can be configured to explore different regimes of the denoising 
   - Affects approximation quality of $p_{\text{data}}$
   - Computational complexity scales linearly with $N$
 
-- **Delta computation methods**: Variants of the log-sum-exp stabilization
+- **Log-sum-exp stabilization**: Parameters controlling numerical stability for small $\sigma$
   - Investigate numerical stability vs. approximation quality trade-offs
 
 ## 🎓 Theoretical Background

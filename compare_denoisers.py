@@ -29,7 +29,7 @@ import os
 import matplotlib.pyplot as plt
 
 # Import ideal denoiser
-from ideal_denoiser import ideal_denoiser, ideal_denoiser_enhanced, get_available_denoiser_methods
+from ideal_denoiser import ideal_denoiser, get_available_denoiser_methods
 from utils import add_gaussian_noise, load_cifar10_subset, normalize_for_display
 from utils.visualization import create_comparison_figure
 
@@ -262,7 +262,7 @@ def generate_multi_method_comparison(
     methods_to_compare: list
 ) -> None:
     """
-    Generate comparisons for multiple denoising methods.
+    Generate comparisons for one or more denoising methods.
     
     Parameters:
     -----------
@@ -279,7 +279,7 @@ def generate_multi_method_comparison(
     device : str
         Device to use
     methods_to_compare : list
-        List of method names from available methods
+        List of method names from available methods (currently only 'max' is supported)
     """
     available_methods = get_available_denoiser_methods()
     
@@ -309,10 +309,10 @@ def generate_multi_method_comparison(
 
 def main():
     """
-    Main function to demonstrate multiple ideal denoiser variants across different noise levels.
+    Main function to demonstrate the ideal denoiser across different noise levels.
     
     Generates comparison figures for both training and test datasets,
-    showing noisy images and results from different denoising methods side-by-side
+    showing noisy images and results from the denoising method side-by-side
     for visual quality assessment.
     """
     # Configuration
@@ -324,7 +324,7 @@ def main():
         'train_selection_indices': [2, 3, 4],
         'test_selection_indices': [2, 3, 4],
         'ideal_denoiser_subset_size': 1000,
-        'methods_to_compare': ['max', 'mean', 'percentile_95', 'adaptive', 'mean_std']
+        'methods_to_compare': ['max']
     }
     
     # Device selection
