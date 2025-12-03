@@ -23,6 +23,7 @@ Note:
 Usage:
     python run_ideal_denoiser.py --num-images 3 --train-size 1000
     python run_ideal_denoiser.py --sigma-list 0 0.5 1 2 5 10 --device cuda
+    python run_ideal_denoiser.py --sigma-list 0 1 2 5 --denoise-sigma 0.5
 """
 
 import torch
@@ -43,7 +44,8 @@ def process_images_at_sigma(
     selected_images: torch.Tensor,
     train_images: torch.Tensor,
     sigma: float,
-    device: str
+    device: str,
+    denoise_sigma: float = None
 ) -> tuple:
     """
     Process images at a specific noise level with ideal denoiser.
@@ -55,32 +57,39 @@ def process_images_at_sigma(
     train_images : torch.Tensor
         Training images for ideal denoiser reference
     sigma : float
-        Noise level
+        Noise level for adding noise to images
     device : str
         Device to run computations on
+    denoise_sigma : float, optional
+        Noise level for denoising. If None, uses the same sigma as noising.
+        This allows denoising at a different noise level than what was used for noising.
         
     Returns:
     --------
     tuple : (noisy, ideal_denoised)
         Two tensors containing the noisy images and denoised versions
     """
-    # Handle sigma = 0 case
+    # Determine which sigma to use for denoising
+    sigma_for_denoising = denoise_sigma if denoise_sigma is not None else sigma
+    
+    # Handle sigma = 0 case for noising
     if sigma == 0:
-        return (
-            selected_images.clone(),
-            selected_images.clone()
-        )
+        noisy_batch = selected_images.clone()
+    else:
+        # Add noise (in float32, matching how data is loaded)
+        noisy_batch = add_gaussian_noise(selected_images, sigma)
     
-    # Add noise (in float32, matching how data is loaded)
-    noisy_batch = add_gaussian_noise(selected_images, sigma)
-    
-    # Denoise with ideal denoiser
-    with torch.no_grad():
-        ideal_denoised_batch = ideal_denoiser(
-            noisy_batch,
-            sigma,
-            train_images
-        )
+    # Handle sigma = 0 case for denoising
+    if sigma_for_denoising == 0:
+        ideal_denoised_batch = noisy_batch.clone()
+    else:
+        # Denoise with ideal denoiser using the specified denoising sigma
+        with torch.no_grad():
+            ideal_denoised_batch = ideal_denoiser(
+                noisy_batch,
+                sigma_for_denoising,
+                train_images
+            )
     
     return noisy_batch, ideal_denoised_batch
 
@@ -91,7 +100,8 @@ def generate_denoiser_output(
     sigma_values: list,
     dataset_name: str,
     save_path: str,
-    device: str = 'cpu'
+    device: str = 'cpu',
+    denoise_sigma: float = None
 ) -> tuple:
     """
     Generate output of ideal denoiser across noise levels.
@@ -110,13 +120,16 @@ def generate_denoiser_output(
         CIFAR-10 training images (used for ideal denoiser)
         Shape: (num_train, C, H, W)
     sigma_values : list
-        List of noise levels to test
+        List of noise levels to test for adding noise
     dataset_name : str
         Name of the dataset ('train' or 'test') for naming output file
     save_path : str
         Full path to save output image
     device : str
         Device to run computations on ('cpu' or 'cuda')
+    denoise_sigma : float, optional
+        Noise level for denoising. If None, each image is denoised with the same
+        sigma used for noising. If specified, all images are denoised with this sigma.
         
     Returns:
     --------
@@ -131,7 +144,11 @@ def generate_denoiser_output(
     num_sigmas = len(sigma_values)
     
     print(f"\nProcessing {num_images} images with {num_sigmas} sigma values...")
-    print(f"Sigma values: {sigma_values}")
+    print(f"Noising sigma values: {sigma_values}")
+    if denoise_sigma is not None:
+        print(f"Denoising sigma (fixed): {denoise_sigma}")
+    else:
+        print(f"Denoising sigma: same as noising sigma")
     print(f"Dataset: {dataset_name}")
     
     # Storage for results
@@ -144,7 +161,8 @@ def generate_denoiser_output(
             selected_images,
             train_images,
             sigma,
-            device
+            device,
+            denoise_sigma=denoise_sigma
         )
         
         noisy_images_all.append(noisy)
@@ -224,7 +242,15 @@ def parse_arguments():
         type=float,
         nargs='+',
         default=[0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50],
-        help='List of sigma (noise level) values to test'
+        help='List of sigma (noise level) values to test for noising images'
+    )
+    parser.add_argument(
+        '--denoise-sigma',
+        type=float,
+        default=None,
+        help='Fixed sigma value for denoising all images. If not specified (None), '
+             'each noised image will be denoised with the same sigma used for noising. '
+             'If specified, all noised images will be denoised with this fixed sigma value.'
     )
     
     # Device parameters
@@ -272,7 +298,11 @@ def main():
     print(f"  Save directory: {args.save_dir}")
     print(f"  Number of images: {args.num_images}")
     print(f"  Training images for denoiser: {args.train_size}")
-    print(f"  Sigma values: {args.sigma_list}")
+    print(f"  Noising sigma values: {args.sigma_list}")
+    if args.denoise_sigma is not None:
+        print(f"  Denoising sigma (fixed): {args.denoise_sigma}")
+    else:
+        print(f"  Denoising sigma: same as noising sigma")
     print(f"  Random seed: {args.seed}")
     
     # Set random seed for reproducibility (only if provided)
@@ -348,7 +378,8 @@ def main():
         sigma_values=args.sigma_list,
         dataset_name="train",
         save_path=train_output_path,
-        device=device
+        device=device,
+        denoise_sigma=args.denoise_sigma
     )
     
     # Generate output for test set
@@ -363,7 +394,8 @@ def main():
         sigma_values=args.sigma_list,
         dataset_name="test",
         save_path=test_output_path,
-        device=device
+        device=device,
+        denoise_sigma=args.denoise_sigma
     )
     
     print("\n" + "="*80)
