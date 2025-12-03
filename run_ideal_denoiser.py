@@ -285,18 +285,18 @@ def main():
     print("Loading Data Subsets")
     print("="*80)
     
-    print(f"\nLoading {args.num_images} samples for selection...")
+    print("\nLoading CIFAR-10 subsets for random image selection...")
     train_subset = load_cifar10_subset(
         root=args.data_root,
         normalize=True,
         train=True,
-        max_samples=args.num_images
+        max_samples=None
     )
     test_subset = load_cifar10_subset(
         root=args.data_root,
         normalize=True,
         train=False,
-        max_samples=args.num_images
+        max_samples=None
     )
     
     num_available = len(train_subset)
