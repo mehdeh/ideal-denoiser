@@ -439,10 +439,11 @@ $$
 
 **Why This Works:**
 
-1. **Subtract maximum**: By subtracting $\delta$ from all log-probabilities, the largest value becomes 0
-2. **Bounded exponentials**: All exponentials $\exp(\ell_i - \delta)$ are now in the range $(0, 1]$
-3. **Numerically stable**: Prevents both overflow and underflow
-4. **Equivalent result**: Since $\delta$ appears in both numerator and denominator, it cancels out:
+1. **Subtract maximum**: By subtracting $\delta$ from all log-probabilities, the largest exponent becomes 0
+2. **Non-positive exponents**: All exponents $\ell_i - \delta \leq 0$ (since $\delta$ is the maximum)
+3. **Bounded exponentials**: The exponential values $\exp(\ell_i - \delta)$ are bounded in $(0, 1]$
+4. **Numerically stable**: Prevents overflow (exponentials never exceed 1) and reduces underflow risk
+5. **Equivalent result**: Since $\delta$ appears in both numerator and denominator, it cancels out mathematically:
 
 $$
 D(x; \sigma) = \frac{\sum_i x_i \cdot \exp(\ell_i - \delta)}{\sum_i \exp(\ell_i - \delta)} = \frac{\exp(-\delta) \sum_i x_i \cdot \exp(\ell_i)}{\exp(-\delta) \sum_i \exp(\ell_i)} = \frac{\sum_i x_i \cdot \exp(\ell_i)}{\sum_i \exp(\ell_i)}

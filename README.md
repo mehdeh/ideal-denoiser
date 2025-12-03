@@ -38,7 +38,7 @@ $$
 D(x; \sigma) = \frac{\sum_{i=1}^{N} x_i \cdot \exp\left(-\frac{\|x - x_i\|^2}{2\sigma^2} - \delta\right)}{\sum_{i=1}^{N} \exp\left(-\frac{\|x - x_i\|^2}{2\sigma^2} - \delta\right)}
 $$
 
-where subtracting $\delta$ bounds all exponentials in $(0, 1]$, preventing numerical issues while maintaining mathematical equivalence. For detailed mathematical derivations and analysis, see **[MATHEMATICAL_BACKGROUND.md](MATHEMATICAL_BACKGROUND.md)**.
+where subtracting $\delta$ ensures that all exponents ($\ell_i - \delta$) are non-positive ($\leq 0$), bounding the exponential values in $(0, 1]$ and preventing numerical overflow. This maintains mathematical equivalence while providing numerical stability. For detailed mathematical derivations and analysis, see **[MATHEMATICAL_BACKGROUND.md](MATHEMATICAL_BACKGROUND.md)**.
 
 ## 🚀 Quick Start
 
