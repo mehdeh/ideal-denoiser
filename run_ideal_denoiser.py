@@ -299,18 +299,27 @@ def main():
         max_samples=None
     )
     
-    num_available = len(train_subset)
-    if args.num_images > num_available:
+    # Generate separate random indices for train and test sets
+    num_train_available = len(train_subset)
+    num_test_available = len(test_subset)
+    
+    if args.num_images > num_train_available:
         raise ValueError(
-            f"Requested num-images={args.num_images} but only {num_available} samples are available."
+            f"Requested num-images={args.num_images} but only {num_train_available} training samples are available."
+        )
+    if args.num_images > num_test_available:
+        raise ValueError(
+            f"Requested num-images={args.num_images} but only {num_test_available} test samples are available."
         )
     
-    indices = np.random.choice(num_available, size=args.num_images, replace=False)
+    train_indices = np.random.choice(num_train_available, size=args.num_images, replace=False)
+    test_indices = np.random.choice(num_test_available, size=args.num_images, replace=False)
     
-    print(f"\n  Randomly selected indices: {indices.tolist()}")
+    print(f"\n  Randomly selected train indices: {train_indices.tolist()}")
+    print(f"  Randomly selected test indices: {test_indices.tolist()}")
     
-    train_selected = train_subset[indices]
-    test_selected = test_subset[indices]
+    train_selected = train_subset[train_indices]
+    test_selected = test_subset[test_indices]
     
     print(f"Selected {len(train_selected)} training images")
     print(f"Selected {len(test_selected)} test images")
