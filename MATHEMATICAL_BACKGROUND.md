@@ -244,33 +244,58 @@ $$
 - **Dissimilar images get lower weight**: If $x_i$ is far from $x$, then $w_i$ is small.
 - **Sigma controls similarity**: Larger $\sigma$ makes the weights more uniform; smaller $\sigma$ makes the weights more peaked.
 
-## 4. Special Cases
+## 4. Theoretical Properties
 
-### Case 1: Zero Noise ($\sigma \to 0$)
+### 4.1 The Ideal Denoiser as an Optimal Estimator
+
+The ideal denoiser represents the **Bayes-optimal estimator** under the $L^2$ loss for the image denoising problem. It provides a **theoretical performance upper bound** against which practical denoising algorithms can be evaluated. The optimality is derived from two equivalent perspectives:
+
+1. **Bayesian Inference**: The posterior mean $\mathbb{E}[x' \mid x]$ minimizes the expected squared error
+2. **Denoising Score Matching**: The solution that minimizes $\mathbb{E}_{x' \sim p_{\text{data}}} \mathbb{E}_{n \sim \mathcal{N}(0,\sigma^2)} \|D(x'+n) - x'\|^2$
+
+### 4.2 Assumptions and Limitations
+
+The ideal denoiser requires:
+- **Complete knowledge of $p_{\text{data}}$**: Access to the entire training distribution (empirically: all training samples)
+- **Known noise model**: Precise knowledge of noise level $\sigma$
+- **Computational resources**: $O(N \times d)$ complexity per query, where $N$ is dataset size
+
+### 4.3 Neural Denoisers as Function Approximators
+
+Practical neural network-based denoisers **approximate** the ideal denoiser with critical advantages:
+- **Constant complexity**: $O(d)$ inference time, independent of $N$
+- **Compact parametrization**: Store only network weights $\theta$, not entire dataset
+- **Generalization capability**: Learned denoisers can handle out-of-distribution images
+
+The ideal denoiser thus serves as a theoretical benchmark, while neural networks provide scalable approximations.
+
+### 4.4 Asymptotic Behavior and Special Cases
+
+#### Case 1: Zero Noise ($\sigma \to 0$)
 
 When $\sigma \to 0$:
 
 $$
-D(x; \sigma) \to x_{\text{nearest}}
+D(x; \sigma) \to x_{\text{NN}}, \quad \text{where } x_{\text{NN}} = \arg\min_{x_i} \|x - x_i\|
 $$
 
-The denoiser returns the **nearest neighbor** from the training set.
+The denoiser returns the **nearest neighbor** from the training set. This reduces to nearest neighbor selection.
 
 **Proof**: As $\sigma \to 0$, the weight $w_i$ for the closest training image dominates all others.
 
-### Case 2: Infinite Noise ($\sigma \to \infty$)
+#### Case 2: Infinite Noise ($\sigma \to \infty$)
 
 When $\sigma \to \infty$:
 
 $$
-D(x; \sigma) \to \frac{1}{N} \sum_{i=1}^{N} x_i = \bar{x}
+D(x; \sigma) \to \bar{x} = \frac{1}{N} \sum_{i=1}^{N} x_i
 $$
 
-The denoiser returns the **mean** of all training images.
+The denoiser returns the **mean** of all training images. All weights become uniform, converging to the dataset mean.
 
 **Proof**: As $\sigma \to \infty$, all weights become equal: $w_i \to 1/N$.
 
-### Case 3: Exact Match ($x = x_k$ for some $k$)
+#### Case 3: Exact Match ($x = x_k$ for some $k$)
 
 If the noisy input exactly matches a training image:
 
@@ -279,6 +304,10 @@ D(x; \sigma) \approx x_k
 $$
 
 for small $\sigma$.
+
+#### Case 4: Interpolation Regime
+
+For intermediate $\sigma$ values, the denoiser performs smooth kernel-weighted averaging, providing a natural interpolation between the nearest neighbor and dataset mean behaviors.
 
 ## 5. Connection to Score Matching
 
@@ -421,7 +450,44 @@ $$
 
 **Implementation Note**: This is the technique used in the code at lines 86-87 of `ideal_denoiser/core.py`, where `delta` is computed as the maximum of `sigma_norm2` values.
 
-## 7. Comparison with Neural Denoisers
+## 7. Experimental Parameters and Configuration
+
+The experiments can be configured to explore different regimes of the denoising problem. Understanding these parameters is crucial for properly evaluating the ideal denoiser behavior.
+
+### 7.1 Noise Levels ($\sigma$)
+
+The choice of noise levels determines the regime of denoising:
+
+- **Range**: Typically $[0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50]$
+  - **Low regime** ($\sigma \in [0.2, 1]$): Nearest-neighbor behavior dominates
+  - **Intermediate regime** ($\sigma \in [2, 10]$): Kernel averaging with balanced weights
+  - **High regime** ($\sigma \geq 20$): Approaches dataset mean (uniform weights)
+
+### 7.2 Dataset Size ($N$)
+
+The number of training samples affects:
+
+- **Approximation quality**: Larger $N$ provides better approximation of $p_{\text{data}}$
+- **Computational complexity**: Scales linearly as $O(N \times d)$
+- **Memory requirements**: Storage scales as $N \times C \times H \times W$
+- **Recommended values**: 1000-5000 samples for CIFAR-10 experiments (controlled by `--train-size` parameter)
+
+### 7.3 Number of Test Images
+
+The number of images to denoise affects:
+
+- **Visual assessment quality**: More images provide better statistical evaluation
+- **Processing time**: Linear increase with number of images
+- **Visualization clarity**: Trade-off between comprehensiveness and interpretability
+
+### 7.4 Practical Considerations
+
+- Use GPU acceleration for larger datasets ($N > 5000$)
+- Monitor memory usage when working with high-resolution images
+- Consider batch processing for multiple test images
+- Balance between statistical significance and computational resources
+
+## 8. Comparison with Neural Denoisers
 
 | Aspect | Ideal Denoiser | Neural Denoiser |
 |--------|----------------|-----------------|
@@ -438,7 +504,7 @@ Neural networks **approximate** the ideal denoiser but with:
 - **Compact representation**: Store only network weights
 - **Generalization**: Can denoise images outside the training set
 
-## 8. Practical Implementation
+## 9. Practical Implementation
 
 ### PyTorch Implementation
 
@@ -469,7 +535,7 @@ For efficiency, process multiple noisy images at once:
 denoised = ideal_denoiser(x_noisy, sigma, x_train) # (B, C, H, W)
 ```
 
-## 9. Extensions and Variations
+## 10. Extensions and Variations
 
 ### 1. Kernel Denoising
 
@@ -495,7 +561,7 @@ where $\mathcal{N}_k(x)$ are the $k$ nearest neighbors.
 
 Use different noise levels for different dimensions or channels.
 
-## 10. References
+## 11. References
 
 1. **EDM Paper**: Karras et al., "Elucidating the Design Space of Diffusion-Based Generative Models", NeurIPS 2022
  - Equation 57 in Appendix B.3
