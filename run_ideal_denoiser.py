@@ -285,13 +285,14 @@ def main():
     print("Loading Data Subsets")
     print("="*80)
     
-    print("\nLoading CIFAR-10 subsets for random image selection...")
+    print("\nLoading CIFAR-10 training subset for random selection and ideal denoiser...")
     train_subset = load_cifar10_subset(
         root=args.data_root,
         normalize=True,
         train=True,
-        max_samples=None
+        max_samples=args.train_size
     )
+    print("\nLoading full CIFAR-10 test set for random selection...")
     test_subset = load_cifar10_subset(
         root=args.data_root,
         normalize=True,
@@ -324,14 +325,8 @@ def main():
     print(f"Selected {len(train_selected)} training images")
     print(f"Selected {len(test_selected)} test images")
     
-    # Load training images for ideal denoiser reference
-    print(f"\nLoading {args.train_size} training images for ideal denoiser...")
-    train_images_for_denoiser = load_cifar10_subset(
-        root=args.data_root,
-        normalize=True,
-        train=True,
-        max_samples=args.train_size
-    )
+    # Training images for ideal denoiser reference: use the same train subset
+    train_images_for_denoiser = train_subset
     
     # Generate timestamp for output filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
