@@ -16,16 +16,11 @@ Reference:
 """
 
 import torch
-from torchvision.utils import make_grid, save_image
 import numpy as np
-from tqdm import tqdm
 import os
-import matplotlib.pyplot as plt
 
 # Import ideal denoiser and utilities
-from ideal_denoiser import ideal_denoiser
-from utils import add_gaussian_noise, load_cifar10_dataset, load_cifar10_subset, normalize_for_display
-from utils.visualization import create_labeled_figure
+from utils import load_cifar10_subset, generate_denoiser_output
 
 
 def generate_figure1(selected_images, train_images, 
@@ -35,6 +30,9 @@ def generate_figure1(selected_images, train_images,
                      device='cpu'):
     """
     Generate Figure 1 from EDM paper showing ideal denoiser performance.
+    
+    This is a wrapper around the general generate_denoiser_output utility,
+    configured specifically for EDM paper Figure 1 reproduction.
     
     Parameters:
     -----------
@@ -50,65 +48,31 @@ def generate_figure1(selected_images, train_images,
         Directory to save output images
     device : str
         Device to run computations on ('cpu' or 'cuda')
+        
+    Returns:
+    --------
+    tuple : (noisy_grid, denoised_grid)
+        Two grids containing noisy and denoised images
     """
     os.makedirs(save_dir, exist_ok=True)
     
-    # Move to device
-    train_images = train_images.to(device)
-    selected_images = selected_images.to(device)
+    # Construct save path
+    save_path = os.path.join(save_dir, f"figure1_combined_{dataset_name}.png")
     
-    num_images = len(selected_images)
-    num_sigmas = len(sigma_values)
-    
-    print(f"\nGenerating Figure 1 with {num_images} images and {num_sigmas} sigma values...")
+    # Use the general denoiser output generator with EDM style visualization
+    print(f"\nGenerating Figure 1 with {len(selected_images)} images and {len(sigma_values)} sigma values...")
     print(f"Sigma values: {sigma_values}")
     
-    # Storage for results
-    noisy_images_all = []
-    denoised_images_all = []
-    
-    # Process each sigma value with batch of all images (more efficient)
-    for sigma_idx, sigma in enumerate(tqdm(sigma_values, desc="Processing sigma values")):
-        # Add noise to all images at once
-        noisy_batch = add_gaussian_noise(selected_images, sigma)  # (num_images, C, H, W)
-        
-        # Denoise using ideal denoiser
-        if sigma == 0:
-            denoised_batch = selected_images.clone()
-        else:
-            with torch.no_grad():
-                denoised_batch = ideal_denoiser(noisy_batch, sigma, train_images)
-        
-        noisy_images_all.append(noisy_batch)
-        denoised_images_all.append(denoised_batch)
-    
-    # Stack all images: transpose from (num_sigmas, num_images, C, H, W) to (num_images, num_sigmas, C, H, W)
-    # then flatten to (num_images * num_sigmas, C, H, W)
-    noisy_stack = torch.stack(noisy_images_all, dim=0)  # (num_sigmas, num_images, C, H, W)
-    denoised_stack = torch.stack(denoised_images_all, dim=0)  # (num_sigmas, num_images, C, H, W)
-    
-    # Transpose to organize by image rows, sigma columns
-    noisy_stack = noisy_stack.transpose(0, 1)  # (num_images, num_sigmas, C, H, W)
-    denoised_stack = denoised_stack.transpose(0, 1)  # (num_images, num_sigmas, C, H, W)
-    
-    # Flatten to grid format
-    noisy_images_grid = noisy_stack.reshape(-1, *noisy_stack.shape[2:])  # (num_images * num_sigmas, C, H, W)
-    denoised_images_grid = denoised_stack.reshape(-1, *denoised_stack.shape[2:])  # (num_images * num_sigmas, C, H, W)
-    
-    # Normalize for display
-    noisy_images_display = normalize_for_display(noisy_images_grid)
-    denoised_images_display = normalize_for_display(denoised_images_grid)
-    
-    # Create grids
-    print("\nCreating image grids...")
-    noisy_grid = make_grid(noisy_images_display, nrow=num_sigmas, padding=2, pad_value=1.0)
-    denoised_grid = make_grid(denoised_images_display, nrow=num_sigmas, padding=2, pad_value=1.0)
-    
-    # Create combined visualization with labels
-    combined_path = os.path.join(save_dir, f"figure1_combined_{dataset_name}.png")
-    create_labeled_figure(noisy_grid, denoised_grid, sigma_values, combined_path, num_sigmas)
-    
-    return noisy_grid, denoised_grid
+    return generate_denoiser_output(
+        selected_images=selected_images,
+        train_images=train_images,
+        sigma_values=sigma_values,
+        dataset_name=dataset_name,
+        save_path=save_path,
+        device=device,
+        denoise_sigma=None,  # Use same sigma for denoising as for noising (EDM paper standard)
+        use_edm_style=True    # Use EDM paper style visualization
+    )
 
 
 def main():

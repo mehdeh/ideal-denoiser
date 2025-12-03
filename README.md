@@ -46,8 +46,8 @@ ideal-denoising/
 │
 ├── utils/                      # Utility modules
 │   ├── __init__.py
-│   ├── noise_utils.py          # Noise generation
-│   ├── image_utils.py          # Data loading and processing
+│   ├── core.py                 # Core utilities (noise, data loading, normalization)
+│   ├── processing.py           # Image processing pipelines
 │   └── visualization.py        # Plotting and visualization
 │
 ├── docs/                       # Documentation images
@@ -137,6 +137,7 @@ python run_ideal_denoiser.py --device cuda --train-size 5000
 | `--num-images` | `3` | Number of images to denoise from each dataset |
 | `--train-size` | `1000` | Number of training images for denoiser reference |
 | `--sigma-list` | `0 0.2 0.5 1 2 3 5 7 10 20 50` | List of noise levels to test |
+| `--denoise-sigma` | `None` | Fixed sigma for denoising (if not set, uses same as noising) |
 | `--device` | auto-detect | Device to use (`cpu` or `cuda`) |
 | `--seed` | `None` | Random seed for reproducibility (if not set, selection is non-deterministic) |
 
