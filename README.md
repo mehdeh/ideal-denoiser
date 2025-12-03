@@ -38,7 +38,7 @@ This formula computes a **weighted kernel average** over the training distributi
 ```
 ideal-denoising/
 ├── ideal_denoiser.py           # Core implementation (Equation 57)
-├── compare_denoisers.py        # Comparison across noise levels
+├── run_ideal_denoiser.py       # CLI tool to run denoiser with custom parameters
 ├── generate_edm_figure1.py     # Generate EDM Figure 1 visualization
 ├── MATHEMATICAL_BACKGROUND.md  # Mathematical theory and derivations
 ├── README.md                   # This file
@@ -57,7 +57,7 @@ ideal-denoising/
 ├── data/                       # Dataset storage (auto-downloaded)
 └── results/                    # Output directory
     ├── edm_figure1/            # EDM Figure 1 results
-    └── denoiser_comparison/    # Comparison results
+    └── denoiser_runs/          # CLI denoiser run results
 ```
 
 ## 🚀 Quick Start
@@ -113,25 +113,50 @@ This demonstrates the denoiser's behavior across different signal-to-noise ratio
 
 **Expected runtime:** ~5-10 minutes on CPU, ~2-3 minutes on GPU
 
-### Comparative Analysis Across Noise Regimes
+### Run Ideal Denoiser with Custom Parameters
 
-Empirically evaluate denoiser performance across the noise spectrum using the ideal denoiser with log-sum-exp stabilization:
+Use the CLI tool to run the ideal denoiser with configurable parameters:
 
 ```bash
-python compare_denoisers.py
+# Basic usage with default parameters
+python run_ideal_denoiser.py
+
+# Custom number of images and noise levels
+python run_ideal_denoiser.py --num-images 5 --sigma-list 0 1 2 5 10
+
+# Use GPU and larger training set
+python run_ideal_denoiser.py --device cuda --train-size 5000
+
+# Custom start index and specific sigma range
+python run_ideal_denoiser.py --start-index 10 --num-images 3 --sigma-list 0.5 1 2 3
 ```
 
-This experiment:
-1. Samples test images from CIFAR-10 distribution
-2. Applies Gaussian noise across logarithmically-spaced $\sigma$ values
-3. Applies the ideal denoiser with log-sum-exp stabilization
-4. Generates comparative visualizations for qualitative assessment
+**CLI Parameters:**
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| `--data-root` | `./data` | Root directory for CIFAR-10 data |
+| `--save-dir` | `./results/denoiser_runs` | Directory to save output images |
+| `--num-images` | `3` | Number of images to denoise from each dataset |
+| `--start-index` | `2` | Starting index for image selection |
+| `--train-size` | `1000` | Number of training images for denoiser reference |
+| `--sigma-list` | `0 0.2 0.5 1 2 3 5 7 10 20 50` | List of noise levels to test |
+| `--device` | auto-detect | Device to use (`cpu` or `cuda`) |
+| `--seed` | `42` | Random seed for reproducibility |
 
 **Output Files:**
-- `comparison_train_max.png`: In-distribution (training) performance
-- `comparison_test_max.png`: Generalization (test) performance
 
-**Expected runtime:** ~15-20 minutes on CPU, ~5-7 minutes on GPU
+Output files are automatically named with timestamp and configuration:
+- `{timestamp}_n{num_images}_s{sigma_min}-{sigma_max}_train{train_size}_train.png`: Training set results
+- `{timestamp}_n{num_images}_s{sigma_min}-{sigma_max}_train{train_size}_test.png`: Test set results
+
+Example: `20231215_143022_n3_s0-50_train1000_train.png`
+
+**Visualization Structure:**
+- **Row 1:** Noisy images at different noise levels
+- **Row 2:** Denoised results using ideal denoiser
+
+**Expected runtime:** ~1-15 minutes depending on `--train-size` and `--sigma-list` length
 
 
 ## 📐 Mathematical Foundation
@@ -238,12 +263,14 @@ The experiments can be configured to explore different regimes of the denoising 
   - Intermediate: $\sigma \in [2, 10]$ → kernel averaging
   - High regime: $\sigma \geq 20$ → approaches dataset mean
 
-- **Dataset size ($N$)**: Number of training samples for empirical distribution
+- **Dataset size ($N$)**: Number of training samples for empirical distribution (controlled by `--train-size`)
   - Affects approximation quality of $p_{\text{data}}$
   - Computational complexity scales linearly with $N$
+  - Recommended: 1000-5000 for CIFAR-10
 
-- **Log-sum-exp stabilization**: Parameters controlling numerical stability for small $\sigma$
-  - Investigate numerical stability vs. approximation quality trade-offs
+- **Number of test images**: Number of images to denoise (controlled by `--num-images`)
+  - More images provide better visual assessment
+  - Trade-off between visualization clarity and processing time
 
 ## 🎓 Theoretical Background
 
