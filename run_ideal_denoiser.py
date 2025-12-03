@@ -69,7 +69,7 @@ def parse_arguments():
     parser.add_argument(
         '--train-size',
         type=int,
-        default=1000,
+        default=50000,
         help='Number of training images to use for ideal denoiser reference'
     )
     parser.add_argument(
