@@ -19,60 +19,8 @@ import torch
 import numpy as np
 import os
 
-# Import ideal denoiser and utilities
+# Import utilities
 from utils import load_cifar10_subset, generate_denoiser_output
-
-
-def generate_figure1(selected_images, train_images, 
-                     sigma_values=[0, 0.2, 0.5, 1, 2, 3, 5, 7, 10, 20, 50],
-                     dataset_name="train",
-                     save_dir="./results",
-                     device='cpu'):
-    """
-    Generate Figure 1 from EDM paper showing ideal denoiser performance.
-    
-    This is a wrapper around the general generate_denoiser_output utility,
-    configured specifically for EDM paper Figure 1 reproduction.
-    
-    Parameters:
-    -----------
-    selected_images : torch.Tensor
-        Selected images to process (from train or test set)
-    train_images : torch.Tensor
-        CIFAR-10 training images (used for ideal denoiser)
-    sigma_values : list
-        List of noise levels to test
-    dataset_name : str
-        Name of the dataset ('train' or 'test') for naming output file
-    save_dir : str
-        Directory to save output images
-    device : str
-        Device to run computations on ('cpu' or 'cuda')
-        
-    Returns:
-    --------
-    tuple : (noisy_grid, denoised_grid)
-        Two grids containing noisy and denoised images
-    """
-    os.makedirs(save_dir, exist_ok=True)
-    
-    # Construct save path
-    save_path = os.path.join(save_dir, f"figure1_combined_{dataset_name}.png")
-    
-    # Use the general denoiser output generator with EDM style visualization
-    print(f"\nGenerating Figure 1 with {len(selected_images)} images and {len(sigma_values)} sigma values...")
-    print(f"Sigma values: {sigma_values}")
-    
-    return generate_denoiser_output(
-        selected_images=selected_images,
-        train_images=train_images,
-        sigma_values=sigma_values,
-        dataset_name=dataset_name,
-        save_path=save_path,
-        device=device,
-        denoise_sigma=None,  # Use same sigma for denoising as for noising (EDM paper standard)
-        use_edm_style=True    # Use EDM paper style visualization
-    )
 
 
 def main():
@@ -143,13 +91,21 @@ def main():
     print("Generating EDM Figure 1: Training Set")
     print("="*80)
     
-    generate_figure1(
+    os.makedirs(save_dir, exist_ok=True)
+    train_save_path = os.path.join(save_dir, "figure1_combined_train.png")
+    
+    print(f"\nGenerating Figure 1 with {len(train_selected)} images and {len(sigma_values)} sigma values...")
+    print(f"Sigma values: {sigma_values}")
+    
+    generate_denoiser_output(
         selected_images=train_selected,
         train_images=train_images_for_denoiser,
         sigma_values=sigma_values,
         dataset_name="train",
-        save_dir=save_dir,
-        device=device
+        save_path=train_save_path,
+        device=device,
+        denoise_sigma=None,  # Use same sigma for denoising as for noising (EDM paper standard)
+        use_edm_style=True   # Use EDM paper style visualization
     )
     
     # Generate Figure 1 for test set
@@ -157,13 +113,20 @@ def main():
     print("Generating EDM Figure 1: Test Set")
     print("="*80)
     
-    generate_figure1(
+    test_save_path = os.path.join(save_dir, "figure1_combined_test.png")
+    
+    print(f"\nGenerating Figure 1 with {len(test_selected)} images and {len(sigma_values)} sigma values...")
+    print(f"Sigma values: {sigma_values}")
+    
+    generate_denoiser_output(
         selected_images=test_selected,
         train_images=train_images_for_denoiser,
         sigma_values=sigma_values,
         dataset_name="test",
-        save_dir=save_dir,
-        device=device
+        save_path=test_save_path,
+        device=device,
+        denoise_sigma=None,  # Use same sigma for denoising as for noising (EDM paper standard)
+        use_edm_style=True   # Use EDM paper style visualization
     )
     
     print("\n" + "="*80)
