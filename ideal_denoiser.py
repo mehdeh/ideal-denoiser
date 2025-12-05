@@ -21,7 +21,7 @@ Note:
 import torch
 
 
-def ideal_denoiser(x_noisy, sigma, x_all):
+def ideal_denoiser(x_noisy, sigma, x_train):
     """
     Ideal denoiser using closed-form solution from EDM paper (Eq. 57).
     
@@ -44,8 +44,8 @@ def ideal_denoiser(x_noisy, sigma, x_all):
         Noisy input images of shape (batch_size, C, H, W)
     sigma : float or torch.Tensor
         Noise level (standard deviation)
-    x_all : torch.Tensor
-        All training images used as reference distribution of shape (num_samples, C, H, W)
+    x_train : torch.Tensor
+        Training images used as reference distribution of shape (num_samples, C, H, W)
         
     Returns:
     --------
@@ -80,27 +80,27 @@ def ideal_denoiser(x_noisy, sigma, x_all):
     >>> print(f"Denoised shape: {denoised_image.shape}")
     """
     # Compute squared L2 distance between noisy images and all training images
-    # x_all: (N, C, H, W), x_noisy: (B, C, H, W)
+    # x_train: (N, C, H, W), x_noisy: (B, C, H, W)
     # Result: (N, B)
-    norm2 = ((x_all[:, None, :, :, :] - x_noisy[None, :, :, :, :]) ** 2).sum(dim=(2, 3, 4))
+    norm2 = ((x_train[:, None] - x_noisy[None, :]) ** 2).sum(dim=(2, 3, 4))
     
-    # Compute log probabilities: log p(x | x_i) = -||x - x_i||^2 / (2*sigma^2)
-    sigma_norm2 = -norm2 / (2 * sigma ** 2)
+    # Compute log weights (with numerical stability)
+    log_weights = -norm2 / (2 * sigma ** 2)
     
     # Numerical stability: subtract max value before exp (log-sum-exp trick)
-    delta = torch.max(sigma_norm2, dim=0, keepdim=True)[0]
+    delta = log_weights.max(dim=0, keepdim=True)[0]
     
-    # Compute exp of log probabilities
-    exp_norm2 = (sigma_norm2 - delta).exp()
+    # Compute weights
+    weights = (log_weights - delta).exp()
     
-    # Compute weighted sum: numerator and denominator
-    # exp_norm2: (N, B) -> (N, B, 1, 1, 1)
-    # x_all: (N, C, H, W) -> (N, 1, C, H, W)
-    numerator = exp_norm2[:, :, None, None, None] * x_all[:, None, :, :, :]  # (N, B, C, H, W)
-    denominator = exp_norm2.sum(dim=0)  # (B,)
+    # Compute weighted average: numerator and denominator
+    # weights: (N, B) -> (N, B, 1, 1, 1)
+    # x_train: (N, C, H, W) -> (N, 1, C, H, W)
+    numerator = (weights[:, :, None, None, None] * x_train[:, None]).sum(dim=0)  # (B, C, H, W)
+    denominator = weights.sum(dim=0)  # (B,)
     
     # Compute denoised images
-    denoised = numerator.sum(dim=0) / denominator[:, None, None, None]  # (B, C, H, W)
+    denoised = numerator / denominator[:, None, None, None]  # (B, C, H, W)
     
     return denoised
 
