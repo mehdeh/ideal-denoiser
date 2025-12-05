@@ -52,12 +52,12 @@ cd ideal-denoising
 pip install -r requirements.txt
 ```
 
-### Reproduce EDM Paper Visualization
+### Reproduce EDM Paper Visualization (Figure 1)
 
-Generate empirical demonstrations of the ideal denoiser across the noise spectrum:
+Generate empirical demonstrations of the ideal denoiser across the noise spectrum using the CLI tool:
 
 ```bash
-python generate_edm_figure1.py
+python run_ideal_denoiser.py --train-size 1000 --sigma-list 0 0.2 0.5 1 2 3 5 7 10 20 50 --seed 42
 ```
 
 This experiment:
@@ -67,8 +67,8 @@ This experiment:
 4. Generates comparative visualizations
 
 **Output Files:**
-- `figure1_combined_train.png`: In-distribution denoising results
-- `figure1_combined_test.png`: Out-of-sample denoising results
+- Results are saved in `./results/denoiser_runs/` with timestamped filenames
+- Separate files for training and test sets (e.g., `*_train.png` and `*_test.png`)
 
 **Visualization Structure:**
 - **Top row:** Noisy observations $x = x' + n$ at various $\sigma$
@@ -165,7 +165,6 @@ If you find any issues or have suggestions for improvements, please feel free to
 ideal-denoising/
 ├── ideal_denoiser.py           # Core implementation (Equation 57)
 ├── run_ideal_denoiser.py       # CLI tool to run denoiser with custom parameters
-├── generate_edm_figure1.py     # Generate EDM Figure 1 visualization
 ├── MATHEMATICAL_BACKGROUND.md  # Mathematical theory and derivations
 ├── README.md                   # This file
 ├── requirements.txt            # Dependencies
@@ -182,7 +181,6 @@ ideal-denoising/
 │
 ├── data/                       # Dataset storage (auto-downloaded)
 └── results/                    # Output directory
-    ├── edm_figure1/            # EDM Figure 1 results
     └── denoiser_runs/          # CLI denoiser run results
 ```
 
