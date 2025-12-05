@@ -132,7 +132,7 @@ The ideal denoiser concept and formula (Equation 57) are from:
 
 ### Implementation
 
-This implementation is our own work. **The original EDM repository does not include code for the ideal denoiser (Equation 57)**. This repository fills that gap by providing a clean, well-documented implementation.
+This implementation is our own work. This repository provides a clean, well-documented implementation.
 
 ## 📖 Citation
 
