@@ -57,7 +57,7 @@ pip install -r requirements.txt
 Generate empirical demonstrations of the ideal denoiser across the noise spectrum using the CLI tool:
 
 ```bash
-python run_ideal_denoiser.py --num-images 2 --sigma-list 0 0.2 0.5 1 2 3 5 7 10 20 50 --seed 42
+python run_ideal_denoiser.py --num-images 2 --sigma-list 0 0.2 0.5 1 2 3 5 7 10 20 50
 ```
 
 This experiment:
