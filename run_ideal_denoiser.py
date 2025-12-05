@@ -53,7 +53,7 @@ def parse_arguments():
     parser.add_argument(
         '--save-dir',
         type=str,
-        default='./results/denoiser_runs',
+        default='./results',
         help='Directory to save output images'
     )
     

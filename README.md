@@ -67,7 +67,7 @@ This experiment:
 4. Generates comparative visualizations
 
 **Output Files:**
-- Results are saved in `./results/denoiser_runs/` with timestamped filenames
+- Results are saved in `./results/` with timestamped filenames
 - Separate files for training and test sets (e.g., `*_train.png` and `*_test.png`)
 
 **Visualization Structure:**
@@ -111,7 +111,7 @@ python run_ideal_denoiser.py --device cuda --train-size 5000
 | Parameter | Default | Description |
 |-----------|---------|-------------|
 | `--data-root` | `./data` | Root directory for CIFAR-10 data |
-| `--save-dir` | `./results/denoiser_runs` | Directory to save output images |
+| `--save-dir` | `./results` | Directory to save output images |
 | `--num-images` | `3` | Number of images to denoise from each dataset |
 | `--train-size` | `1000` | Number of training images for denoiser reference |
 | `--sigma-list` | `0 0.2 0.5 1 2 3 5 7 10 20 50` | List of noise levels to test |
@@ -180,8 +180,7 @@ ideal-denoising/
 │   └── figure1_combined_test.png
 │
 ├── data/                       # Dataset storage (auto-downloaded)
-└── results/                    # Output directory
-    └── denoiser_runs/          # CLI denoiser run results
+└── results/                    # Output directory for denoiser run results
 ```
 
 ---
